@@ -343,7 +343,7 @@ public class MainActivity extends ActionBarActivity {
                     InetAddress inetAddress = enumIpAddr.nextElement();
                     if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(ipAddress = inetAddress.getHostAddress()))
                     {
-                        ipAddress = inetAddress.getHostAddress().toString();
+                        ipAddress = inetAddress.getHostAddress();
 
 
                         return ipAddress;
