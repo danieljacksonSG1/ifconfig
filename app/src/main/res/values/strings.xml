@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">ifconfig</string>
+
+    <!-- Menu strings -->
+    <string name="action_settings">Settings</string>
+    <string name="EndThisMadness">End This Madness</string>
+
+    <!-- Main page string resources -->
+    <!-- IP Details -->
+    <string name="IPDetails">IP Details</string>
+    <string name="IP">IP:</string>
+    <string name="SN">SN:</string>
+    <string name="GW">GW:</string>
+    <string name="WAN">WAN:</string>
+    <string name="NAT">NAT:</string>
+    <string name="DNS1">DNS1:</string>
+    <string name="DNS2">DNS2:</string>
+
+    <!-- DHCP SERVER stuff -->
+    <string name="Lease">Lease:</string>
+    <string name="DHCPDetails">DHCP Details</string>
+    <string name="DHCPServer">DHCP Server:</string>
+
+    <!-- Wireless details -->
+    <string name="WirelessDetails">Wireless Details</string>
+    <string name="SSID">SSID:</string>
+    <string name="RSSI">RSSI:</string>
+    <string name="BSSID">BSSID:</string>
+    <string name="LINKSPEED">Link Speed:</string>
+    <string name="LOCALMAC">Local Mac:</string>
+
+    <!-- Progress Bar stuff -->
+    <string name="_0Mbps">0Mbps</string>
+    <string name="_75Mbps">75Mbps</string>
+    <string name="_150Mbps">150Mbps</string>
+    <string name="title_activity_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+
+    <!-- Settings page stuff -->
+    <string name="WANIPUPDATE_URL">WAN IP retrieval method:</string>
+    <string name="Test">Test</string>
+    <string name="Save">Save</string>
+
+
+</resources>
