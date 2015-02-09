@@ -17,20 +17,29 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.os.Handler;
 import android.net.*;
+import android.widget.Toast;
+
 import java.io.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 import org.apache.http.conn.util.InetAddressUtils;
 
 
 
 public class MainActivity extends ActionBarActivity {
+
+    public final String TAG = MainActivity.class.getSimpleName();
+    public final String DEBUG_TAG = "EXP:";
 
     // TextView variables
     TextView IP_VIEW;
@@ -50,6 +59,9 @@ public class MainActivity extends ActionBarActivity {
     TextView LINKSPEED_VIEW;
     TextView LOCALMAC_VIEW;
 
+    // Counter for displaying toast about network state
+    int toastCount = 0;
+
     ProgressBar BITRATE_BAR;
 
     TextView CONSOLE_VIEW;
@@ -58,7 +70,7 @@ public class MainActivity extends ActionBarActivity {
     // For Refreshing the GUI
     private Handler mHandler;
 
-    String DEBUG_TAG = "EXP:";
+
 
     // Dynamic DNS URL
     String DYN_URL;
@@ -91,6 +103,12 @@ public class MainActivity extends ActionBarActivity {
         BITRATE_BAR = (ProgressBar) findViewById(R.id.BitRateBar_ID);
         CONSOLE_VIEW = (TextView) findViewById(R.id.ConsoleOutput_ID);
 
+        GetNetInfo GNI = new GetNetInfo();
+
+        GNI.getIntName();
+        GNI.getMTU();
+        GNI.getIPAddresses();
+
         // Refreshe's the RSSI and Mbps in the GUI
         mHandler = new Handler();
         mHandler.post(mUpdate);
@@ -112,10 +130,14 @@ public class MainActivity extends ActionBarActivity {
             new DownloadWebpageTask().execute(DYN_URL);
         }
 
+
+
     }
 
     @Override
     protected void onResume() {
+        // reset toast count
+        toastCount = 0;
         super.onResume();
         new DownloadWebpageTask().execute(DYN_URL);
     }
@@ -159,10 +181,17 @@ public class MainActivity extends ActionBarActivity {
             getMobileIP();
 
 
-            mHandler.postDelayed(this, 1000);
+            mHandler.postDelayed(this, 2000);
         }
     };
+    // Method to convert integer version of IP to IP Address
+    public String intToIp(int i) {
 
+        return ((i >> 24 ) & 0xFF ) + "." +
+                ((i >> 16 ) & 0xFF) + "." +
+                ((i >> 8 ) & 0xFF) + "." +
+                ( i & 0xFF) ;
+    }
 
     // This method gets all the IP details
     public void GetIPinfo() {
@@ -177,16 +206,17 @@ public class MainActivity extends ActionBarActivity {
         // Create an instance of the WiFiManager API
         WifiManager WiFiInfo = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         DhcpInfo DHCP_INFO = WiFiInfo.getDhcpInfo();
+
+
         IP = Formatter.formatIpAddress(DHCP_INFO.ipAddress);
-        SN = Formatter.formatIpAddress(DHCP_INFO.netmask);
         GW = Formatter.formatIpAddress(DHCP_INFO.gateway);
+        SN = Formatter.formatIpAddress(DHCP_INFO.netmask);
         DNS1 = Formatter.formatIpAddress(DHCP_INFO.dns1);
         DNS2 = Formatter.formatIpAddress(DHCP_INFO.dns2);
         DHCP_SERVER_IP = Formatter.formatIpAddress(DHCP_INFO.serverAddress);
-        Lease = Integer.toString(DHCP_INFO.leaseDuration / 60 / 60);
-
+        Lease = Formatter.formatIpAddress(DHCP_INFO.leaseDuration / 60 / 60);
         // Push the data to the GUI
-        if (NetState() == "WiFi")
+        if (NetState().equals("WiFi"))
         {
             IP_VIEW.setText(IP);
             SUBNET_VIEW.setText(SN);
@@ -196,7 +226,7 @@ public class MainActivity extends ActionBarActivity {
             DHCPSERVER_VIEW.setText(DHCP_SERVER_IP);
             LEASE_VIEW.setText(Lease + "Hr");
         }
-        else if (NetState() == "Mobile")
+        else if (NetState().equals("Mobile"))
         {
             IP_VIEW.setText(getMobileIP());
             SUBNET_VIEW.setText("");
@@ -227,7 +257,7 @@ public class MainActivity extends ActionBarActivity {
         LinkSpeed = Integer.toString(WIFI_INFO.getLinkSpeed());
         LocalMac = WIFI_INFO.getMacAddress();
 
-        if (NetState() == "WiFi")
+        if (NetState().equals("WiFi"))
         {
             SSID_VIEW.setText(SSID);
             RSSI_VIEW.setText(RSSI);
@@ -237,7 +267,7 @@ public class MainActivity extends ActionBarActivity {
             LOCALMAC_VIEW.setText(LocalMac);
 
         }
-        else if(NetState() == "Mobile")
+        else if(NetState().equals("Mobile"))
         {
             SSID_VIEW.setText("");
             RSSI_VIEW.setText("");
@@ -246,6 +276,7 @@ public class MainActivity extends ActionBarActivity {
             BITRATE_BAR.setProgress(0);
             LOCALMAC_VIEW.setText(LocalMac);
         }
+
 
 
 
@@ -346,12 +377,16 @@ public class MainActivity extends ActionBarActivity {
                         ipAddress = inetAddress.getHostAddress();
 
 
+
                         return ipAddress;
 
                     }
                 }
             }
-        } catch (SocketException ex) {}
+        } catch (SocketException ex)
+        {
+            Log.d(TAG, "Unable to determine mobile IP address");
+        }
         return "done";
       }
 
@@ -377,6 +412,20 @@ public class MainActivity extends ActionBarActivity {
             //wifi
            // ToastMsg("Connected through WiFi");
             return "WiFi";
+        }
+        else
+        {
+            Log.d(TAG, "Unable to determine type of network connection.");
+            if (toastCount == 1)
+            {
+                // Don't display the toast again
+            }
+            else if (toastCount == 0)
+            {
+                Toast.makeText(MainActivity.this, "Looks like you don't have a network connection", Toast.LENGTH_LONG).show();
+                toastCount = 1;
+            }
+
         }
 
     return "done";
