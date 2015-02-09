@@ -89,28 +89,6 @@ public class GetNetInfo
         return null;
     }
 
-    public String getNext1()
-    {
-        try
-        {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            NetworkInterface NI = interfaces.nextElement();
-            Enumeration<InetAddress> IE = NI.getInetAddresses();
-            InetAddress myIE = IE.nextElement();
-
-            RouteInfo RI = RouteInfo(RouteInfo);
-
-            return IPAddress1;
-
-        }
-        catch(SocketException e)
-        {
-            Log.e(TAG, e.getMessage());
-        }
-
-        return null;
-    }
-
 
 
 
