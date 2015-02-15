@@ -12,6 +12,7 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class GetNetInfo
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             NetworkInterface NI = interfaces.nextElement();
             intName = NI.getDisplayName();
-            Log.i(TAG, intName);
+            //Log.i(TAG, intName);
 
             return intName;
 
@@ -53,7 +54,7 @@ public class GetNetInfo
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             NetworkInterface NI = interfaces.nextElement();
             intMTU = NI.getMTU();
-            Log.i(TAG, intMTU + "");
+           // Log.i(TAG, intMTU + "");
 
             return intMTU;
 
@@ -76,7 +77,7 @@ public class GetNetInfo
             InterfaceAddress IP = IPAddress.get(0);
             IPAddress1 = IP.toString();
 
-            Log.i(TAG, IPAddress1);
+            //Log.i(TAG, IPAddress1);
 
             return IPAddress1;
 
@@ -89,7 +90,32 @@ public class GetNetInfo
         return null;
     }
 
+    public void GetAll() {
+        try {
+            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+
+            for (NetworkInterface netIf : Collections.list(nets)) {
+                Log.i(TAG, netIf.getDisplayName());
+                Log.i(TAG, String.valueOf(netIf.getMTU()));
+                Log.i(TAG, netIf.getInterfaceAddresses().get(0).toString());
 
 
+
+
+
+            }
+        } catch (SocketException e)
+        {
+            Log.e(TAG, e.getMessage());
+        }
+        catch(IndexOutOfBoundsException e)
+        {
+            Log.e(TAG, e.getMessage());
+        }
+      
+    }
 
 }
+
+
+

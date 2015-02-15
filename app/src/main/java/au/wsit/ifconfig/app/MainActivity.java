@@ -107,7 +107,7 @@ public class MainActivity extends ActionBarActivity {
 
         GNI.getIntName();
         GNI.getMTU();
-        GNI.getIPAddresses();
+        GNI.GetAll();
 
         // Refreshe's the RSSI and Mbps in the GUI
         mHandler = new Handler();
@@ -248,6 +248,8 @@ public class MainActivity extends ActionBarActivity {
         String LinkSpeed;
         String LocalMac;
 
+
+
         WifiManager WifiStats = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         WifiInfo WIFI_INFO = WifiStats.getConnectionInfo();
 
@@ -256,6 +258,7 @@ public class MainActivity extends ActionBarActivity {
         BSSID = WIFI_INFO.getBSSID();
         LinkSpeed = Integer.toString(WIFI_INFO.getLinkSpeed());
         LocalMac = WIFI_INFO.getMacAddress();
+
 
         if (NetState().equals("WiFi"))
         {
@@ -276,8 +279,6 @@ public class MainActivity extends ActionBarActivity {
             BITRATE_BAR.setProgress(0);
             LOCALMAC_VIEW.setText(LocalMac);
         }
-
-
 
 
     }
@@ -375,6 +376,7 @@ public class MainActivity extends ActionBarActivity {
                     if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(ipAddress = inetAddress.getHostAddress()))
                     {
                         ipAddress = inetAddress.getHostAddress();
+
 
 
 
