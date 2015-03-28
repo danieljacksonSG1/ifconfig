@@ -1,13 +1,17 @@
 package au.wsit.ifconfig.app;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,7 +25,15 @@ public class Settings extends ActionBarActivity {
     int logger_count = 0;
 
     MainActivity getMain = new MainActivity();
-    WriteFile getIP = new WriteFile();
+    //WriteFile getIP = new WriteFile();
+
+    CheckBox mNotificationCheckBox;
+
+    boolean checkBoxState;
+    boolean checkBoxSavedState;
+    SharedPreferences mSharedPreferences;
+
+    public static final String TAG = Settings.class.getSimpleName();
 
 
     @Override
@@ -29,10 +41,43 @@ public class Settings extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
         WAN_IP_GET_METHOD = (EditText) findViewById(R.id.WAN_IP_EditText_ID);
+        mNotificationCheckBox = (CheckBox) findViewById(R.id.notification_checkBox);
         LOG_OUTPUT = (TextView) findViewById(R.id.ID_LOG);
 
-        WAN_IP_GET_METHOD.setText(getIP.readData("URL.txt"));
+        WAN_IP_GET_METHOD.setText(mSharedPreferences.getString(ifconfigConstants.KEY_DYN_URL, null));
+
+
+
+        // Check if we have already saved the checkbox state
+        checkBoxSavedState = mSharedPreferences.getBoolean(ifconfigConstants.KEY_NOTIFICATIONS_ENABLED, true);
+
+        mNotificationCheckBox.setChecked(checkBoxSavedState);
+
+        mNotificationCheckBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (mNotificationCheckBox.isChecked())
+                {
+                    Toast.makeText(Settings.this, "Notifications enabled", Toast.LENGTH_LONG).show();
+
+                    // Turn on notifications
+                    mSharedPreferences.edit().putBoolean(ifconfigConstants.KEY_NOTIFICATIONS_ENABLED, true).apply();
+
+                }
+                else
+                {
+                    Toast.makeText(Settings.this, "Notifications disabled", Toast.LENGTH_LONG).show();
+
+                    // Turn off notifications
+                    mSharedPreferences.edit().putBoolean(ifconfigConstants.KEY_NOTIFICATIONS_ENABLED, false).apply();
+                }
+
+            }
+        });
 
 
     }
@@ -41,13 +86,9 @@ public class Settings extends ActionBarActivity {
 
     public void SaveButton(View view)
     {
-        WriteFile FILE_WRITE = new WriteFile();
-        boolean val = FILE_WRITE.writeData(WAN_IP_GET_METHOD.getText().toString() + "\n", "URL.txt");
-        if (val == true)
-        {
-            ToastMsg("Saved");
-        }
 
+        mSharedPreferences.edit().putString(ifconfigConstants.KEY_DYN_URL, WAN_IP_GET_METHOD.getText().toString()).apply();
+        ToastMsg("Saved");
 
     }
 
@@ -89,11 +130,7 @@ public class Settings extends ActionBarActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.settings, menu);
 
-
-
         return true;
-
-
     }
 
     @Override

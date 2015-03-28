@@ -42,6 +42,7 @@
     <string name="WANIPUPDATE_URL">WAN IP retrieval method:</string>
     <string name="Test">Test</string>
     <string name="Save">Save</string>
+    <string name="notifications_enabled">Notifications Enabled</string>
 
 
 </resources>

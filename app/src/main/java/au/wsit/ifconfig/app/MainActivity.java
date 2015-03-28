@@ -1,10 +1,16 @@
 package au.wsit.ifconfig.app;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.Html;
@@ -39,7 +45,9 @@ import org.apache.http.conn.util.InetAddressUtils;
 public class MainActivity extends ActionBarActivity {
 
     public final String TAG = MainActivity.class.getSimpleName();
-    public final String DEBUG_TAG = "EXP:";
+
+    // Shared prefs
+    SharedPreferences mSharedPreferences;
 
     // TextView variables
     TextView IP_VIEW;
@@ -59,6 +67,10 @@ public class MainActivity extends ActionBarActivity {
     TextView LINKSPEED_VIEW;
     TextView LOCALMAC_VIEW;
 
+    String CURRENT_WAN_IP;
+    String LOCAL_IP;
+    String CURRENT_RSSI;
+
     // Counter for displaying toast about network state
     int toastCount = 0;
 
@@ -73,7 +85,9 @@ public class MainActivity extends ActionBarActivity {
 
 
     // Dynamic DNS URL
-    String DYN_URL;
+    String DYN_URL = "http://checkip.dyndns.org";
+    private int mId;
+
 
 
     @Override
@@ -113,21 +127,24 @@ public class MainActivity extends ActionBarActivity {
         mHandler = new Handler();
         mHandler.post(mUpdate);
 
+        mHandler.post(updateNotifcations);
 
-        if (WriteFile.checkFileExists("URL.txt") == false)
+        // Setting default
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if(mSharedPreferences.getString(ifconfigConstants.KEY_DYN_URL, null) == null)
         {
-            DYN_URL = "http://checkip.dyndns.org\n";
-            // We then write it to file
-            WriteFile WRITE_URL = new WriteFile();
-            WRITE_URL.writeData(DYN_URL, "URL.txt");
+            // First run
+            // Setup
+            Log.i(TAG, "First run of app, configuring default settings");
+            mSharedPreferences.edit().putString(ifconfigConstants.KEY_DYN_URL, DYN_URL).apply();
+            mSharedPreferences.edit().putBoolean(ifconfigConstants.KEY_NOTIFICATIONS_ENABLED, true).apply();
+
         }
-
-        else if (WriteFile.checkFileExists("URL.txt") == true)
+        else if(mSharedPreferences.getString(ifconfigConstants.KEY_DYN_URL, null) != null)
         {
-            // Get the saved Dynamic DNS update method from file
-            WriteFile GetIP_FROM_FILE = new WriteFile();
-            DYN_URL = GetIP_FROM_FILE.readData("URL.txt");
-            new DownloadWebpageTask().execute(DYN_URL);
+            Log.i(TAG, "Detected shared prefs");
+            new DownloadWebpageTask().execute(mSharedPreferences.getString(ifconfigConstants.KEY_DYN_URL, null));
         }
 
 
@@ -182,16 +199,31 @@ public class MainActivity extends ActionBarActivity {
 
 
             mHandler.postDelayed(this, 2000);
+
+
+
         }
     };
-    // Method to convert integer version of IP to IP Address
-    public String intToIp(int i) {
 
-        return ((i >> 24 ) & 0xFF ) + "." +
-                ((i >> 16 ) & 0xFF) + "." +
-                ((i >> 8 ) & 0xFF) + "." +
-                ( i & 0xFF) ;
-    }
+    private Runnable updateNotifcations = new Runnable() {
+        @Override
+        public void run() {
+            Log.i(TAG, "Going to set notifications");
+
+            if(mSharedPreferences.getBoolean(ifconfigConstants.KEY_NOTIFICATIONS_ENABLED, true))
+            {
+                IPNotifications();
+            }
+            else
+            {
+                Log.i(TAG, "Notifications off");
+            }
+
+
+            mHandler.postDelayed(this, 10000);
+        }
+    };
+
 
     // This method gets all the IP details
     public void GetIPinfo() {
@@ -209,12 +241,14 @@ public class MainActivity extends ActionBarActivity {
 
 
         IP = Formatter.formatIpAddress(DHCP_INFO.ipAddress);
+        // Set global
+        LOCAL_IP = IP;
         GW = Formatter.formatIpAddress(DHCP_INFO.gateway);
         SN = Formatter.formatIpAddress(DHCP_INFO.netmask);
         DNS1 = Formatter.formatIpAddress(DHCP_INFO.dns1);
         DNS2 = Formatter.formatIpAddress(DHCP_INFO.dns2);
         DHCP_SERVER_IP = Formatter.formatIpAddress(DHCP_INFO.serverAddress);
-        Lease = Formatter.formatIpAddress(DHCP_INFO.leaseDuration / 60 / 60);
+        Lease = String.valueOf(DHCP_INFO.leaseDuration / 60 / 60);
         // Push the data to the GUI
         if (NetState().equals("WiFi"))
         {
@@ -255,6 +289,7 @@ public class MainActivity extends ActionBarActivity {
 
         SSID = WIFI_INFO.getSSID();
         RSSI = Integer.toString(WIFI_INFO.getRssi());
+        CURRENT_RSSI = RSSI;
         BSSID = WIFI_INFO.getBSSID();
         LinkSpeed = Integer.toString(WIFI_INFO.getLinkSpeed());
         LocalMac = WIFI_INFO.getMacAddress();
@@ -301,6 +336,10 @@ public class MainActivity extends ActionBarActivity {
         {
             WAN_VIEW.setText(result);
             NAT_VIEW.setText(CheckNAT());
+
+            // Store the WAN IP in a global var
+            CURRENT_WAN_IP = result;
+            Log.i(TAG, "Our WAN IP is: " + result);
         }
     }
 
@@ -434,21 +473,6 @@ public class MainActivity extends ActionBarActivity {
     }
 
 
-    // Method for debugging purposes
-    public void LogOutput(String msg)
-    {
-        if (console_count > 4)
-        {
-            // If the console messages get to big then clear the output log
-            CONSOLE_VIEW.setText("");
-        }
-
-        msg = msg.toString();
-        CONSOLE_VIEW.append(msg + "\n");
-        console_count++;
-
-
-    }
     // Returns YES or NO
     public String CheckNAT()
     {
@@ -475,6 +499,38 @@ public class MainActivity extends ActionBarActivity {
         Intent ABOUT_INTENT = new Intent(this, Settings.class);
         startActivity(ABOUT_INTENT);
     }
+
+
+    // Set our WAN IP in the notification area
+    public void IPNotifications()
+    {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_ifconfig)
+                .setContentTitle("IP Details")
+                .setContentText("WAN: " + CURRENT_WAN_IP)
+                .setSubText("RSSI: " + CURRENT_RSSI);
+
+
+        // Create an explicit intent
+        Intent resultIntent = new Intent(this, MainActivity.class);
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(MainActivity.class);
+
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(mId, mBuilder.build());
+
+
+
+
+
+    }
+
 
 
 
